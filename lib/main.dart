@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:klipper_view_micro/services/api_services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'api/klipper_api.dart';
-// Import app.dart instead of directly using HomeScreen
-import 'app.dart';
+import 'screens/home_menu.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -27,6 +27,64 @@ void main() async {
       port: AppConstants.defaultPort
   );
 
-  // Use KlipperApp from app.dart instead of KlipperDirectApp
-  runApp(KlipperApp(api: api));
+  // Initialize the global API service
+  ApiService().initialize(api);
+
+  // Connect to WebSocket - moved from app.dart
+  try {
+    await api.connect();
+  } catch (e) {
+    print('Error connecting to WebSocket: $e');
+  }
+
+  // Run the app with MaterialApp directly
+  runApp(
+    MaterialApp(
+      title: 'Klipper Control',
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final targetDevicePixelRatio = AppConstants.targetPPI / AppConstants.referencePPI;
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            devicePixelRatio: targetDevicePixelRatio,
+          ),
+          child: child!,
+        );
+      },
+      theme: ThemeData(
+        primaryColor: AppTheme.primaryColor,
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: AppTheme.primaryColor,
+          secondary: AppTheme.secondaryColor,
+          background: AppTheme.backgroundColor,
+        ),
+        scaffoldBackgroundColor: AppTheme.backgroundColor,
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: AppTheme.textColor),
+          titleMedium: TextStyle(color: AppTheme.textColor),
+        ),
+      ),
+      home: const HomeMenu(),
+    ),
+  );
+
+  // Add a shutdown hook to dispose the API when the app is closed
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final binding = WidgetsBinding.instance;
+    binding.addObserver(AppLifecycleObserver(api));
+  });
+}
+
+// Observer to handle app lifecycle events
+class AppLifecycleObserver extends WidgetsBindingObserver {
+  final KlipperApi api;
+
+  AppLifecycleObserver(this.api);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      api.dispose();
+    }
+  }
 }

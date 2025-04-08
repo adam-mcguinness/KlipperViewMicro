@@ -110,7 +110,7 @@ class KlipperApi {
   void _handleWebSocketMessage(dynamic message) {
     try {
       // For debugging purposes
-      print('WebSocket received: $message');
+      // print('WebSocket received: $message');
 
       // Try to decode the message
       dynamic data;
