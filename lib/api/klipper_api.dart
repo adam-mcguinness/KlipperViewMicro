@@ -11,16 +11,14 @@ class KlipperApi {
   late String wsUrl;
 
   WebSocketChannel? _socketChannel;
-  StreamController<PrinterData> _dataStreamController = StreamController<PrinterData>.broadcast();
+
+  // Fix the stream controller declaration
+  StreamController<ResourceUsage> _resourceUsageStreamController = StreamController<ResourceUsage>.broadcast();
   StreamController<String> _stateStreamController = StreamController<String>.broadcast();
-  StreamController<PrintJob> _printJobStreamController = StreamController<PrintJob>.broadcast();
-  StreamController<List<PrintFile>> _filesStreamController = StreamController<List<PrintFile>>.broadcast();
 
   // Streams that clients can listen to for updates
-  Stream<PrinterData> get dataStream => _dataStreamController.stream;
+  Stream<ResourceUsage> get resourceUsageStream => _resourceUsageStreamController.stream;
   Stream<String> get stateStream => _stateStreamController.stream;
-  Stream<PrintJob> get printJobStream => _printJobStreamController.stream;
-  Stream<List<PrintFile>> get filesStream => _filesStreamController.stream;
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
@@ -58,6 +56,7 @@ class KlipperApi {
             "virtual_sdcard": null,
             "fan": null,
             "idle_timeout": null,
+            "server": null,
             "gcode_move": null
           }
         },
@@ -97,9 +96,6 @@ class KlipperApi {
       _currentState = "connected";
       _stateStreamController.add(_currentState);
 
-      // Fetch files list
-      fetchFiles();
-
       return true;
     } catch (e) {
       print('WebSocket connection error: $e');
@@ -114,7 +110,7 @@ class KlipperApi {
   void _handleWebSocketMessage(dynamic message) {
     try {
       // For debugging purposes
-      // print('WebSocket received: $message');
+      print('WebSocket received: $message');
 
       // Try to decode the message
       dynamic data;
@@ -125,70 +121,16 @@ class KlipperApi {
         data = message;
       }
 
-      // Handle different message formats
-      if (data is Map) {
-        // Original expected format
-        if (data.containsKey('params') &&
-            data['params'] is Map &&
-            data['params'].containsKey('status')) {
-
-          final statusData = data['params']['status'];
-          final printerData = PrinterData.fromJson(statusData);
-          _dataStreamController.add(printerData);
-
-          // Check for print job updates
-          if (statusData.containsKey('print_stats') &&
-              statusData.containsKey('virtual_sdcard')) {
-            final printStats = statusData['print_stats'];
-            final virtualSdCard = statusData['virtual_sdcard'];
-
-            final printJob = PrintJob(
-              state: printStats['state'] ?? 'standby',
-              filename: printStats['filename'] ?? '',
-              progress: virtualSdCard['progress'] ?? 0.0,
-              printTime: printStats['print_duration'] ?? 0,
-              totalLayers: printStats['total_layer'] ?? 0,
-              currentLayer: printStats['current_layer'] ?? 0,
-            );
-
-            _printJobStreamController.add(printJob);
-          }
-        } else if (data.containsKey('method') && data['method'] == 'notify_status_update') {
-          // Handle status update notifications
-          if (data.containsKey('params') &&
-              data['params'] is Map &&
-              data['params'].containsKey('status')) {
-
-            final statusData = data['params']['status'];
-            final printerData = PrinterData.fromJson(statusData);
-            _dataStreamController.add(printerData);
-          }
-        }
-      } else if (data is List && data.isNotEmpty) {
-        // Some Klipper WebSocket implementations send a list of messages
-        for (var item in data) {
-          if (item is Map &&
-              item.containsKey('params') &&
-              item['params'] is Map &&
-              item['params'].containsKey('status')) {
-
-            final statusData = item['params']['status'];
-            final printerData = PrinterData.fromJson(statusData);
-            _dataStreamController.add(printerData);
-          }
-        }
+      // Handle resource stats update
+      if (data['method'] == 'notify_proc_stat_update' &&
+          data['params'] is List &&
+          data['params'].isNotEmpty) {
+        final procStats = data['params'][0];
+        final resourceUsage = ResourceUsage.fromJson(procStats);
+        _resourceUsageStreamController.add(resourceUsage);
       }
     } catch (e) {
-      print('Error parsing WebSocket message: $e');
-      // Try to fetch data via HTTP as a fallback
-      fetchTemperatureData().then((data) {
-        if (data.isNotEmpty) {
-          final printerData = PrinterData.fromJson(data);
-          _dataStreamController.add(printerData);
-        }
-      }).catchError((e) {
-        print('Fallback HTTP fetch failed: $e');
-      });
+      print('Error processing WebSocket message: $e');
     }
   }
 
@@ -226,37 +168,37 @@ class KlipperApi {
   }
 
   // Fetch files from the printer
-  Future<List<PrintFile>> fetchFiles() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/server/files/list'),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final List<dynamic> filesList = data['result'] ?? [];
-
-        final files = filesList
-            .where((file) => file['filename'].toString().endsWith('.gcode'))
-            .map((file) => PrintFile(
-          name: file['filename'] ?? '',
-          path: file['path'] ?? '',
-          size: file['size'] ?? 0,
-          modified: DateTime.fromMillisecondsSinceEpoch(
-              (file['modified'] ?? 0) * 1000),
-        ))
-            .toList();
-
-        _filesStreamController.add(files);
-        return files;
-      } else {
-        throw Exception('Failed to load files');
-      }
-    } catch (e) {
-      print('Error fetching files: $e');
-      return [];
-    }
-  }
+  // Future<List<PrintFile>> fetchFiles() async {
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse('$baseUrl/server/files/list'),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> data = json.decode(response.body);
+  //       final List<dynamic> filesList = data['result'] ?? [];
+  //
+  //       final files = filesList
+  //           .where((file) => file['filename'].toString().endsWith('.gcode'))
+  //           .map((file) => PrintFile(
+  //         name: file['filename'] ?? '',
+  //         path: file['path'] ?? '',
+  //         size: file['size'] ?? 0,
+  //         modified: DateTime.fromMillisecondsSinceEpoch(
+  //             (file['modified'] ?? 0) * 1000),
+  //       ))
+  //           .toList();
+  //
+  //       _filesStreamController.add(files);
+  //       return files;
+  //     } else {
+  //       throw Exception('Failed to load files');
+  //     }
+  //   } catch (e) {
+  //     print('Error fetching files: $e');
+  //     return [];
+  //   }
+  // }
 
   // Start a print job
   Future<bool> startPrint(String filename) async {
@@ -570,42 +512,7 @@ class KlipperApi {
   // Dispose of resources
   void dispose() {
     disconnect();
-    _dataStreamController.close();
+    _resourceUsageStreamController.close();
     _stateStreamController.close();
-    _printJobStreamController.close();
-    _filesStreamController.close();
   }
-}
-
-// Additional classes for file listings and print jobs
-class PrintFile {
-  final String name;
-  final String path;
-  final int size;
-  final DateTime modified;
-
-  PrintFile({
-    required this.name,
-    required this.path,
-    required this.size,
-    required this.modified,
-  });
-}
-
-class PrintJob {
-  final String state;
-  final String filename;
-  final double progress;
-  final double printTime;
-  final int totalLayers;
-  final int currentLayer;
-
-  PrintJob({
-    required this.state,
-    required this.filename,
-    required this.progress,
-    required this.printTime,
-    required this.totalLayers,
-    required this.currentLayer,
-  });
 }

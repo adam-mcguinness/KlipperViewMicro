@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:klipper_view_micro/screens/test_screen.dart';
 import 'api/klipper_api.dart';
-import 'screens/home_screen.dart';
 import 'utils/constants.dart';
 
-class KlipperApp extends StatelessWidget {
+class KlipperApp extends StatefulWidget {
   final KlipperApi api;
 
   const KlipperApp({Key? key, required this.api}) : super(key: key);
+
+  @override
+  _KlipperAppState createState() => _KlipperAppState();
+}
+
+class _KlipperAppState extends State<KlipperApp> {
+  @override
+  void initState() {
+    super.initState();
+    _connectToWebSocket();
+  }
+
+  Future<void> _connectToWebSocket() async {
+    try {
+      await widget.api.connect();
+    } catch (e) {
+      print('Error connecting to WebSocket: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.api.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,9 +39,7 @@ class KlipperApp extends StatelessWidget {
       title: 'Klipper Control',
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        // Calculate the device pixel ratio for accurate rendering
         final targetDevicePixelRatio = AppConstants.targetPPI / AppConstants.referencePPI;
-
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             devicePixelRatio: targetDevicePixelRatio,
@@ -37,7 +60,8 @@ class KlipperApp extends StatelessWidget {
           titleMedium: TextStyle(color: AppTheme.textColor),
         ),
       ),
-      home: HomeScreen(api: api),
+      // Pass the api to the first screen
+      home: TestScreen(api: widget.api),
     );
   }
 }
