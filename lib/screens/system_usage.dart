@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:klipper_view_micro/utils/swipe_up_home.dart';
+import 'package:klipper_view_micro/utils/swipe_wrapper.dart';
 import 'package:klipper_view_micro/widgets/resource_widget.dart';
 import '../models/printer_data.dart';
 import '../services/api_services.dart';
@@ -44,7 +44,8 @@ class _SystemUsageState extends State<SystemUsage> {
     return Scaffold(
       backgroundColor: Colors.white,
       // Wrap the body with GestureDetector to detect swipe up
-      body: SwipeUpWrapper(
+      body: SwipeWrapper(
+        disableSwipeDown: false,
         child: Container(
             color: Colors.grey.shade900,
             padding: const EdgeInsets.all(5),

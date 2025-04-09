@@ -110,7 +110,7 @@ class KlipperApi {
   void _handleWebSocketMessage(dynamic message) {
     try {
       // For debugging purposes
-      // print('WebSocket received: $message');
+      print('WebSocket received: $message');
 
       // Try to decode the message
       dynamic data;
@@ -128,6 +128,15 @@ class KlipperApi {
         final procStats = data['params'][0];
         final resourceUsage = ResourceUsage.fromJson(procStats);
         _resourceUsageStreamController.add(resourceUsage);
+      }
+      if (data['method'] == 'notify_status_update' &&
+          data['params'] is Map &&
+          data['params'].isNotEmpty) {
+        final status = data['params'];
+        if (status['status'] != null) {
+          _currentState = status['status'];
+          _stateStreamController.add(_currentState);
+        }
       }
     } catch (e) {
       print('Error processing WebSocket message: $e');

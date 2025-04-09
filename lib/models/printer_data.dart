@@ -47,3 +47,32 @@ class ResourceUsage {
     );
   }
 }
+
+class PrintStatus {
+  final String state;
+  final String filename;
+  final int progress;
+  final int estimatedTimeLeft;
+  final int printTime;
+  final int printTimeLeft;
+
+  PrintStatus({
+    required this.state,
+    required this.filename,
+    required this.progress,
+    required this.estimatedTimeLeft,
+    required this.printTime,
+    required this.printTimeLeft,
+  });
+
+  factory PrintStatus.fromJson(Map<String, dynamic> json) {
+    return PrintStatus(
+      state: json['state'] as String? ?? '',
+      filename: json['filename'] as String? ?? '',
+      progress: (json['progress'] as num?)?.toInt() ?? 0,
+      estimatedTimeLeft: (json['estimated_time_left'] as num?)?.toInt() ?? 0,
+      printTime: (json['print_time'] as num?)?.toInt() ?? 0,
+      printTimeLeft: (json['print_time_left'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:klipper_view_micro/screens/control_screen.dart';
+import 'package:klipper_view_micro/screens/status_screen.dart';
+import 'package:klipper_view_micro/screens/system_usage.dart';
 import 'package:klipper_view_micro/services/api_services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'api/klipper_api.dart';
-import 'screens/home_menu.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -41,6 +43,11 @@ void main() async {
   runApp(
     MaterialApp(
       title: 'Klipper Control',
+      routes: {
+        '/': (context) => const StatusScreen(),
+        '/system_usage': (context) => const SystemUsage(),
+        '/control_screen': (context) => const ControlsScreen(),
+      },
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         final targetDevicePixelRatio = AppConstants.targetPPI / AppConstants.referencePPI;
@@ -64,7 +71,6 @@ void main() async {
           titleMedium: TextStyle(color: AppTheme.textColor),
         ),
       ),
-      home: const HomeMenu(),
     ),
   );
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:klipper_view_micro/widgets/control_button.dart';
 import '../services/api_services.dart';
-import '../utils/swipe_up_home.dart';
+import '../utils/swipe_wrapper.dart';
 
 class ControlsScreen extends StatefulWidget {
   const ControlsScreen({Key? key}) : super(key: key);
@@ -103,7 +103,8 @@ class _ControlsScreenState extends State<ControlsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SwipeUpWrapper(
+      body: SwipeWrapper(
+        disableSwipeDown: false,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
