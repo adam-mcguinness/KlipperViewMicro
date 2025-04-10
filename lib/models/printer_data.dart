@@ -18,23 +18,43 @@ class ResourceUsage {
   });
 
   factory ResourceUsage.fromJson(Map<String, dynamic> json) {
-    // Safely access nested values with null checks
-    final cpuData = json['system_cpu_usage'] as Map<String, dynamic>?;
-    final memoryData = json['system_memory'] as Map<String, dynamic>?;
-    final network = json['network']['wlan0'] as Map<String, dynamic>?;
+    // Handle different possible structures in JSON-RPC responses
+    Map<String, dynamic>? cpuData;
+    Map<String, dynamic>? memoryData;
+    Map<String, dynamic>? network;
+
+    // Check if this is the toolhead data or system stats
+    if (json.containsKey('system_cpu_usage')) {
+      cpuData = json['system_cpu_usage'] as Map<String, dynamic>?;
+      memoryData = json['system_memory'] as Map<String, dynamic>?;
+      network = json['network']?['wlan0'] as Map<String, dynamic>?;
+    } else {
+      // This might be toolhead data
+      cpuData = {'cpu': json['velocity'] ?? 0.0};
+      memoryData = {
+        'total': 0,
+        'available': 0,
+        'used': 0,
+      };
+      network = {
+        'rx_packets': 0,
+        'tx_packets': 0,
+        'bandwidth': 0,
+      };
+    }
 
     return ResourceUsage(
       cpuUsage: cpuData?['cpu']?.toDouble() ?? 0.0,
       memoryTotal: memoryData?['total']?.toInt() ?? 0,
       memoryAvailable: memoryData?['available']?.toInt() ?? 0,
-      memoryUsed: memoryData?['used']?.toInt() ?? 0, // Fixed: changed from 'available' to 'used'
+      memoryUsed: memoryData?['used']?.toInt() ?? 0,
       rxBytes: network?['rx_packets']?.toInt() ?? 0,
       txBytes: network?['tx_packets']?.toInt() ?? 0,
       bandwidth: network?['bandwidth']?.toInt() ?? 0,
     );
   }
 
-  // Add a static method to create an empty instance
+  // Static method to create an empty instance
   static ResourceUsage empty() {
     return ResourceUsage(
       cpuUsage: 0.0,
@@ -51,7 +71,7 @@ class ResourceUsage {
 class PrintStatus {
   final String state;
   final String filename;
-  final int progress;
+  final double progress;
   final int estimatedTimeLeft;
   final int printTime;
   final int printTimeLeft;
@@ -66,13 +86,183 @@ class PrintStatus {
   });
 
   factory PrintStatus.fromJson(Map<String, dynamic> json) {
+    // For JSON-RPC 2.0, handle if we get direct status or embedded status
+    final statusData = json.containsKey('status') ? json['status'] : json;
+
     return PrintStatus(
-      state: json['state'] as String? ?? '',
-      filename: json['filename'] as String? ?? '',
-      progress: (json['progress'] as num?)?.toInt() ?? 0,
-      estimatedTimeLeft: (json['estimated_time_left'] as num?)?.toInt() ?? 0,
-      printTime: (json['print_time'] as num?)?.toInt() ?? 0,
-      printTimeLeft: (json['print_time_left'] as num?)?.toInt() ?? 0,
+      state: statusData['state'] as String? ?? '',
+      filename: statusData['filename'] as String? ?? '',
+      progress: _extractProgress(statusData),
+      estimatedTimeLeft: (statusData['estimated_time_left'] as num?)?.toInt() ?? 0,
+      printTime: (statusData['print_time'] as num?)?.toInt() ?? 0,
+      printTimeLeft: (statusData['print_time_left'] as num?)?.toInt() ?? 0,
     );
   }
+
+  // Helper to extract progress which might be in different formats
+  static double _extractProgress(Map<String, dynamic> json) {
+    // Check if we have direct progress value
+    if (json.containsKey('progress')) {
+      return (json['progress'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    // If not, check if we have virtual_sdcard data that contains progress
+    if (json.containsKey('virtual_sdcard')) {
+      final sdcard = json['virtual_sdcard'];
+      if (sdcard is Map<String, dynamic> && sdcard.containsKey('progress')) {
+        return (sdcard['progress'] as num?)?.toDouble() ?? 0.0;
+      }
+    }
+
+    return 0.0;
+  }
+
+  // Create an empty print status
+  static PrintStatus empty() {
+    return PrintStatus(
+      state: '',
+      filename: '',
+      progress: 0.0,
+      estimatedTimeLeft: 0,
+      printTime: 0,
+      printTimeLeft: 0,
+    );
+  }
+}
+
+class HeaterBed{
+  final double currentTemperature;
+  final double targetTemperature;
+  final String state;
+
+  HeaterBed({
+    required this.currentTemperature,
+    required this.targetTemperature,
+    required this.state,
+  });
+
+  factory HeaterBed.fromJson(Map<String, dynamic> json) {
+    // Handle different possible field names in JSON-RPC responses
+    return HeaterBed(
+      currentTemperature: _extractTemp(json, 'current'),
+      targetTemperature: _extractTemp(json, 'target'),
+      state: json['state'] as String? ?? '',
+    );
+  }
+
+  // Helper method to extract temperature which might use different field names
+  static double _extractTemp(Map<String, dynamic> json, String type) {
+    // Check various possible field names
+    if (json.containsKey('${type}_temperature')) {
+      return (json['${type}_temperature'] as num?)?.toDouble() ?? 0.0;
+    } else if (json.containsKey('${type}')) {
+      return (json['${type}'] as num?)?.toDouble() ?? 0.0;
+    } else if (json.containsKey('temperature_${type}')) {
+      return (json['temperature_${type}'] as num?)?.toDouble() ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  // Create an empty heater bed status
+  static HeaterBed empty() {
+    return HeaterBed(
+      currentTemperature: 0.0,
+      targetTemperature: 0.0,
+      state: '',
+    );
+  }
+}
+
+class Extruder {
+  final double currentTemperature;
+  final double targetTemperature;
+  final String state;
+
+  Extruder({
+    required this.currentTemperature,
+    required this.targetTemperature,
+    required this.state,
+  });
+
+  factory Extruder.fromJson(Map<String, dynamic> json) {
+    // Similar to HeaterBed - handle different possible field names
+    return Extruder(
+      currentTemperature: HeaterBed._extractTemp(json, 'current'),
+      targetTemperature: HeaterBed._extractTemp(json, 'target'),
+      state: json['state'] as String? ?? '',
+    );
+  }
+
+  // Create an empty extruder status
+  static Extruder empty() {
+    return Extruder(
+      currentTemperature: 0.0,
+      targetTemperature: 0.0,
+      state: '',
+    );
+  }
+}
+
+class PrintFile {
+  final String path;
+  final int size;
+  final DateTime? modified;
+  final String? filename;
+
+  PrintFile({
+    required this.path,
+    required this.size,
+    this.modified,
+    this.filename,
+  });
+
+  factory PrintFile.fromJson(Map<String, dynamic> json) {
+    return PrintFile(
+      path: json['path'] ?? '',
+      size: json['size'] ?? 0,
+      modified: json['modified'] != null
+          ? DateTime.fromMillisecondsSinceEpoch((json['modified'] as num).toInt() * 1000)
+          : null,
+      filename: json['filename'] ?? json['path']?.toString().split('/').last,
+    );
+  }
+}
+
+class FileList {
+  final List<PrintFile> files;
+
+  FileList({
+    required this.files
+  });
+
+  // Create an empty file list
+  static FileList empty() {
+    return FileList(files: []);
+  }
+}
+
+// New class to handle JSON-RPC response
+class JsonRpcResponse {
+  final dynamic result;
+  final Map<String, dynamic>? error;
+  final String jsonrpc;
+  final dynamic id;
+
+  JsonRpcResponse({
+    this.result,
+    this.error,
+    required this.jsonrpc,
+    required this.id,
+  });
+
+  factory JsonRpcResponse.fromJson(Map<String, dynamic> json) {
+    return JsonRpcResponse(
+      result: json['result'],
+      error: json['error'] != null ? json['error'] as Map<String, dynamic> : null,
+      jsonrpc: json['jsonrpc'] as String? ?? '2.0',
+      id: json['id'],
+    );
+  }
+
+  bool get hasError => error != null;
 }

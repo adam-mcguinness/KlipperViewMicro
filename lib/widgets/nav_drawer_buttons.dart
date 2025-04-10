@@ -62,7 +62,7 @@ class _NavDrawerContent extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () {
-                    // Handle Settings button press
+                    Navigator.pushNamed(context, '/file_list');
                   },
                   icon: const Icon(
                     Icons.folder_open,
