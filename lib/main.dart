@@ -3,7 +3,6 @@ import 'package:klipper_view_micro/screens/control_screen.dart';
 import 'package:klipper_view_micro/screens/file_list_screen.dart';
 import 'package:klipper_view_micro/screens/status_screen.dart';
 import 'package:klipper_view_micro/screens/system_usage.dart';
-import 'package:klipper_view_micro/services/api_services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'api/klipper_api.dart';
 import 'utils/constants.dart';

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:klipper_view_micro/models/printer_data.dart';
-import 'package:klipper_view_micro/services/api_services.dart';
 import '../utils/swipe_wrapper.dart';
 
 class FileListScreen extends StatefulWidget {

@@ -37,7 +37,7 @@ class _SystemUsageState extends State<SystemUsage> {
                 children: [
                   // CPU Usage
                   ResourceWidget(
-                    usage: resourceUsage.cpuUsage * 100,
+                    usage: resourceUsage.cpuUsage,
                     title: 'CPU',
                     icon: Icons.computer,
                     maxValue: 100.0,
