@@ -35,40 +35,177 @@ class _StatusScreenState extends State<StatusScreen> {
     return Scaffold(
       body: SwipeWrapper(
         disableSwipeDown: true,
-        child: StreamBuilder<PrintStatus>(
-          // Use a stream builder to update the UI when print status changes
+        child: StreamBuilder<PrintStats>(
           stream: _api.printStatus,
-          // Default value if no data is available
-          initialData: PrintStatus.empty(),
-          builder: (context, printStatusSnapshot) {
-            // Default to empty data to ensure UI always shows something
-            final printStatus = printStatusSnapshot.data ?? PrintStatus.empty();
+          initialData: PrintStats.empty(),
+          builder: (context, printSnapshot) {
+            if (!_api.isConnected) {
+              return _buildDisconnectedState();
+            }
 
-            return StreamBuilder<HeaterBed>(
-              stream: _api.heaterBedStatus,
-              initialData: HeaterBed.empty(),
-              builder: (context, bedSnapshot) {
-                final bedStatus = bedSnapshot.data ?? HeaterBed.empty();
+            final printStats = printSnapshot.data ?? PrintStats.empty();
+            final isPrinting = printStats.state == 'printing';
+            final isPaused = printStats.state == 'paused';
 
-                return StreamBuilder<Extruder>(
-                  stream: _api.extruderStatus,
-                  initialData: Extruder.empty(),
-                  builder: (context, extruderSnapshot) {
-                    final extruderStatus = extruderSnapshot.data ?? Extruder.empty();
+            return StreamBuilder<VirtualSdCard>(
+              stream: _api.virtualSdCardStatus,
+              initialData: VirtualSdCard(),
+              builder: (context, sdCardSnapshot) {
+                final virtualSdCard = sdCardSnapshot.data ?? VirtualSdCard();
+                final progress = virtualSdCard.progress;
+                final filename = virtualSdCard.filePath ?? 'No file selected';
 
-                    return StreamBuilder<ResourceUsage>(
-                      stream: _api.resourceUsage,
-                      initialData: ResourceUsage.empty(),
-                      builder: (context, resourceSnapshot) {
-                        final resourceUsage = resourceSnapshot.data ?? ResourceUsage.empty();
+                return StreamBuilder<HeaterBed>(
+                  stream: _api.heaterBedStatus,
+                  initialData: HeaterBed.empty(),
+                  builder: (context, bedSnapshot) {
+                    final bedStatus = bedSnapshot.data ?? HeaterBed.empty();
 
-                        // Now build the UI with all the data from streams
-                        return _buildMainUI(
-                          context,
-                          printStatus,
-                          bedStatus,
-                          extruderStatus,
-                          resourceUsage,
+                    return StreamBuilder<Extruder>(
+                      stream: _api.extruderStatus,
+                      initialData: Extruder.empty(),
+                      builder: (context, extruderSnapshot) {
+                        final extruderStatus = extruderSnapshot.data ?? Extruder.empty();
+
+                        final printTime = printStats.printDuration;
+                        final remainingTime = printStats.totalDuration - printStats.printDuration;
+
+                        return CustomPaint(
+                          painter: ProgressBorderPainter(progress),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TempCard(
+                                        title: 'Hotend Temps',
+                                        currentTemp: extruderStatus.currentTemperature,
+                                        targetTemp: extruderStatus.targetTemperature,
+                                        icon: Icons.whatshot,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TempCard(
+                                        title: 'Bed Temps',
+                                        currentTemp: bedStatus.currentTemperature,
+                                        targetTemp: bedStatus.targetTemperature,
+                                        icon: Icons.bed,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.black, width: 2),
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if (isPrinting || isPaused)
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                filename,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          const Expanded(
+                                            child: Center(
+                                              child: Text(
+                                                'Thumbnail\nPlaceholder',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (isPrinting || isPaused)
+                                  PrintStatsRow(
+                                    progressPercentage: progress * 100,
+                                    printTimeElapsed: printTime,
+                                    printTimeRemaining: remainingTime,
+                                  )
+                                else
+                                  const SizedBox(height: 10),
+                                SizedBox(
+                                  height: 50,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            // Implement pause/resume functionality
+                                            _handlePauseResume(isPaused);
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.black, width: 2),
+                                              color: isPrinting || isPaused ? Colors.white : Colors.grey.shade300,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                isPaused ? 'Resume' : 'Pause',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isPrinting || isPaused ? Colors.black : Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            // Implement cancel functionality
+                                            if (isPrinting || isPaused) {
+                                              _handleCancel();
+                                            }
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.black, width: 2),
+                                              color: isPrinting || isPaused ? Colors.white : Colors.grey.shade300,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isPrinting || isPaused ? Colors.black : Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
                       },
                     );
@@ -77,159 +214,6 @@ class _StatusScreenState extends State<StatusScreen> {
               },
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainUI(
-      BuildContext context,
-      PrintStatus printStatus,
-      HeaterBed bedStatus,
-      Extruder extruderStatus,
-      ResourceUsage resourceUsage,
-      ) {
-    final isPrinting = printStatus.state == 'printing';
-    final isPaused = printStatus.state == 'paused';
-    final progress = printStatus.progress;
-    final filename = printStatus.filename;
-    final printTime = printStatus.printTime;
-    final remainingTime = printStatus.printTimeLeft;
-
-    return CustomPaint(
-      painter: ProgressBorderPainter(progress),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TempCard(
-                    title: 'Hotend Temps',
-                    currentTemp: extruderStatus.currentTemperature,
-                    targetTemp: extruderStatus.targetTemperature,
-                    icon: Icons.whatshot,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TempCard(
-                    title: 'Bed Temps',
-                    currentTemp: bedStatus.currentTemperature,
-                    targetTemp: bedStatus.targetTemperature,
-                    icon: Icons.bed,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isPrinting || isPaused)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            filename,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'Thumbnail\nPlaceholder',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            if (isPrinting || isPaused)
-              PrintStatsRow(
-                progressPercentage: progress*100,
-                printTimeElapsed: printTime,
-                printTimeRemaining: remainingTime,
-              )
-            else
-              const SizedBox(height: 10),
-            SizedBox(
-              height: 50,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Implement pause/resume functionality
-                        _handlePauseResume(isPaused);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2),
-                          color: isPrinting || isPaused ? Colors.white : Colors.grey.shade300,
-                        ),
-                        child: Center(
-                          child: Text(
-                            isPaused ? 'Resume' : 'Pause',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isPrinting || isPaused ? Colors.black : Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Implement cancel functionality
-                        if (isPrinting || isPaused) {
-                          _handleCancel();
-                        }
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2),
-                          color: isPrinting || isPaused ? Colors.white : Colors.grey.shade300,
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isPrinting || isPaused ? Colors.black : Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -334,7 +318,7 @@ class _StatusScreenState extends State<StatusScreen> {
   }
 }
 
-// Custom painter for the progress border (unchanged)
+// Custom painter for the progress border
 class ProgressBorderPainter extends CustomPainter {
   final double progress; // 0.0 to 1.0
 

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class PrintStatsRow extends StatelessWidget {
   final double progressPercentage;
-  final int printTimeElapsed;
-  final int printTimeRemaining;
+  final double printTimeElapsed;
+  final double printTimeRemaining;
 
   const PrintStatsRow({
     super.key,
@@ -13,7 +13,7 @@ class PrintStatsRow extends StatelessWidget {
   });
 
   // Format seconds into HH:MM:SS
-  String _formatDuration(int seconds) {
+  String _formatDuration(double seconds) {
     final hours = seconds ~/ 3600;
     final minutes = (seconds % 3600) ~/ 60;
     final remainingSeconds = seconds % 60;
