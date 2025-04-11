@@ -28,4 +28,28 @@ class ApiService {
   void initialize(KlipperApi api) {
     _api = api;
   }
+
+  // Update connection details and reconnect if requested
+  Future<bool> updateConnection({
+    String? ipAddress,
+    int? port,
+    bool reconnect = true
+  }) async {
+    if (_api == null) {
+      throw Exception('KlipperApi not initialized. Call ApiService().initialize() first.');
+    }
+
+    // Update connection details
+    _api!.updateConnectionDetails(
+      ipAddress: ipAddress,
+      port: port,
+    );
+
+    // Reconnect if requested
+    if (reconnect) {
+      return await _api!.connect();
+    }
+
+    return _api!.isConnected;
+  }
 }

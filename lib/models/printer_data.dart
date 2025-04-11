@@ -25,9 +25,9 @@ class ResourceUsage {
 
     // Check if this is the toolhead data or system stats
     if (json.containsKey('system_cpu_usage')) {
-      cpuData = json['system_cpu_usage'] as Map<String, dynamic>?;
-      memoryData = json['system_memory'] as Map<String, dynamic>?;
-      network = json['network']?['wlan0'] as Map<String, dynamic>?;
+      cpuData = json['system_cpu_usage'];
+      memoryData = json['system_memory'];
+      network = json['network']?['wlan0'];
     } else {
       // This might be toolhead data
       cpuData = {'cpu': json['velocity'] ?? 0.0};

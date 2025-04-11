@@ -23,7 +23,7 @@ class _FileListScreenState extends State<FileListScreen> {
 
   Future<void> _loadFileList() async {
     try {
-      final fileList = await ApiService().api.getFileList();
+      final fileList = null;
       setState(() {
         if (fileList != null) {
           files = fileList;
@@ -137,7 +137,6 @@ class _FileListScreenState extends State<FileListScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ApiService().api.startPrint(file.path);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Print job started')),
               );

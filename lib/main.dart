@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:klipper_view_micro/screens/control_screen.dart';
+import 'package:klipper_view_micro/screens/file_list_screen.dart';
 import 'package:klipper_view_micro/screens/status_screen.dart';
 import 'package:klipper_view_micro/screens/system_usage.dart';
 import 'package:klipper_view_micro/services/api_services.dart';
@@ -24,29 +25,33 @@ void main() async {
   });
 
   // Create API instance with default IP and port
-  final api = KlipperApi(
-      ipAddress: AppConstants.defaultIpAddress,
-      port: AppConstants.defaultPort
-  );
-
-  // Initialize the global API service
-  ApiService().initialize(api);
-
-  // Connect to WebSocket - moved from app.dart
-  try {
-    await api.connect();
-  } catch (e) {
-    print('Error connecting to WebSocket: $e');
-  }
+  final api = KlipperApi();
+  await api.connect();
 
   // Run the app with MaterialApp directly
   runApp(
-    MaterialApp(
+    const KlipperViewApp(),
+  );
+
+  // Add a shutdown hook to dispose the API when the app is closed
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final binding = WidgetsBinding.instance;
+    binding.addObserver(AppLifecycleObserver(api));
+  });
+}
+
+class KlipperViewApp extends StatelessWidget {
+  const KlipperViewApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
       title: 'Klipper Control',
       routes: {
         '/': (context) => const StatusScreen(),
         '/system_usage': (context) => const SystemUsage(),
         '/control_screen': (context) => const ControlsScreen(),
+        '/file_list': (context) => const FileListScreen(),
       },
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
@@ -71,14 +76,8 @@ void main() async {
           titleMedium: TextStyle(color: AppTheme.textColor),
         ),
       ),
-    ),
-  );
-
-  // Add a shutdown hook to dispose the API when the app is closed
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final binding = WidgetsBinding.instance;
-    binding.addObserver(AppLifecycleObserver(api));
-  });
+    );
+  }
 }
 
 // Observer to handle app lifecycle events
@@ -91,6 +90,13 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
       api.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      // Try to reconnect if the app is resumed
+      if (!api.isConnected) {
+        api.connect().catchError((e) {
+          print('Error reconnecting on resume: $e');
+        });
+      }
     }
   }
 }

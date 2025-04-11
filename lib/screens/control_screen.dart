@@ -4,7 +4,7 @@ import '../services/api_services.dart';
 import '../utils/swipe_wrapper.dart';
 
 class ControlsScreen extends StatefulWidget {
-  const ControlsScreen({Key? key}) : super(key: key);
+  const ControlsScreen({super.key});
 
   @override
   _ControlsScreenState createState() => _ControlsScreenState();
@@ -24,29 +24,6 @@ class _ControlsScreenState extends State<ControlsScreen> {
   double? _lastX;
   double? _lastY;
   bool _isMoving = false;
-
-  void _moveAxis(String axis, double distance) {
-    final api = ApiService().api;
-
-    // Different handling based on axis
-    switch (axis) {
-      case 'X':
-        api.moveHeadRelative(x: distance, speed: _speed);
-        break;
-      case 'Y':
-        api.moveHeadRelative(y: distance, speed: _speed);
-        break;
-      case 'Z':
-      // Typically move Z at a slower speed
-        api.moveHeadRelative(z: distance, speed: _speed / 2);
-        break;
-    }
-  }
-
-  void _homeAxis(String axis) {
-    final api = ApiService().api;
-    api.homeAxis(axis);
-  }
 
   // Handle gesture start
   void _onPanStart(DragStartDetails details) {
@@ -72,13 +49,6 @@ class _ControlsScreenState extends State<ControlsScreen> {
     final yMovement = -dy * _stepSize / 50; // Negative because screen Y is inverted
 
     // Only move if there's enough movement
-    if (xMovement.abs() >= 0.1) {
-      _moveAxis('X', xMovement);
-    }
-
-    if (yMovement.abs() >= 0.1) {
-      _moveAxis('Y', yMovement);
-    }
 
     // Update last position
     setState(() {
@@ -249,7 +219,7 @@ class _ControlsScreenState extends State<ControlsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10.0),
                 child: ElevatedButton.icon(
-                  onPressed: () => _homeAxis('XY'),
+                  onPressed: () {},
                   icon: const Icon(Icons.home),
                   label: const Text('Home XY'),
                   style: ElevatedButton.styleFrom(
@@ -282,7 +252,7 @@ class _ControlsScreenState extends State<ControlsScreen> {
                   DirectionButton(
                     icon: Icons.keyboard_arrow_up,
                     label: "Z+",
-                    onPressed: () => _moveAxis('Z', _stepSize),
+                    onPressed: () => {},
                   ),
 
                   const SizedBox(width: 20),
@@ -291,7 +261,7 @@ class _ControlsScreenState extends State<ControlsScreen> {
                   DirectionButton(
                     icon: Icons.home,
                     label: "Z",
-                    onPressed: () => _homeAxis('Z'),
+                    onPressed: () => {},
                   ),
 
                   const SizedBox(width: 20),
@@ -300,7 +270,7 @@ class _ControlsScreenState extends State<ControlsScreen> {
                   DirectionButton(
                     icon: Icons.keyboard_arrow_down,
                     label: "Z-",
-                    onPressed: () => _moveAxis('Z', -_stepSize),
+                    onPressed: () => {},
                   ),
                 ],
               ),

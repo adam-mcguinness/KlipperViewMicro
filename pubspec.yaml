@@ -37,6 +37,7 @@ dependencies:
   web_socket_channel: ^3.0.2
   syncfusion_flutter_charts: ^29.1.35
   sleek_circular_slider: ^2.0.1
+  json_rpc_2: ^3.0.3
 
 dev_dependencies:
   flutter_test:

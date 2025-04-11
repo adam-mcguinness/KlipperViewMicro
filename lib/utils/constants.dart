@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class AppConstants {
   // Default Klipper connection settings
   static const String defaultIpAddress = '192.168.0.215'; // Change this to your printer's IP
-  static const String defaultPort = '7125';
+  static const int defaultPort = 7125;
 
   // Display constants (from original code)
   static const double targetPPI = 332.0;
