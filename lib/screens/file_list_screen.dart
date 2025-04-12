@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:klipper_view_micro/models/printer_data.dart';
+import 'package:klipper_view_micro/providers/printer_state_provider.dart';
+import 'package:provider/provider.dart';
 import '../utils/swipe_wrapper.dart';
 
 class FileListScreen extends StatefulWidget {
@@ -12,7 +14,7 @@ class FileListScreen extends StatefulWidget {
 class _FileListScreenState extends State<FileListScreen> {
   bool isLoading = true;
   String? errorMessage;
-  FileList files = FileList(files: []);
+  List<PrintFile> files = [];
 
   @override
   void initState() {
@@ -21,14 +23,16 @@ class _FileListScreenState extends State<FileListScreen> {
   }
 
   Future<void> _loadFileList() async {
+    final provider = Provider.of<PrinterStateProvider>(context, listen: false);
+
     try {
-      final fileList = null;
+      final response = await provider.api.call('server.files.list', {'root': 'gcodes'});
+
       setState(() {
-        if (fileList != null) {
-          files = fileList;
-        } else {
-          errorMessage = "No files found";
-        }
+        // Convert response directly to List<PrintFile>
+        files = (response as List)
+            .map((file) => PrintFile.fromJson(file))
+            .toList();
         isLoading = false;
       });
     } catch (e) {
@@ -73,7 +77,7 @@ class _FileListScreenState extends State<FileListScreen> {
       );
     }
 
-    if (files.files.isEmpty) {
+    if (files.isEmpty) {
       return ListView(
         children: const [
           SizedBox(height: 100),
@@ -88,15 +92,15 @@ class _FileListScreenState extends State<FileListScreen> {
     }
 
     return ListView.builder(
-      itemCount: files.files.length,
+      itemCount: files.length,
       itemBuilder: (context, index) {
-        final file = files.files[index];
+        final file = files[index]; // Get the file at the current index
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
           color: Colors.grey.shade800,
           child: ListTile(
             title: Text(
-              file.path,
+              file.filename, // Use the filename property
               style: const TextStyle(color: Colors.white),
             ),
             subtitle: Text(
@@ -136,6 +140,18 @@ class _FileListScreenState extends State<FileListScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              print(file.path);
+              final provider = Provider.of<PrinterStateProvider>(context, listen: false);
+              provider.api.call('printer.print.start', {'filename': file.path}).then((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Print job started')),
+                );
+              }).catchError((error) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error starting print: $error')),
+                );
+              });
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Print job started')),
               );

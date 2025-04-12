@@ -115,7 +115,7 @@ class VirtualSdCard{
   factory VirtualSdCard.fromJson(Map<String, dynamic> json) {
     return VirtualSdCard(
       filePath: json['file_path'] as String?,
-      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
+      progress: json['progress'] ?? 0.0,
       isActive: json['is_active'] as bool? ?? false,
     );
   }
@@ -135,23 +135,10 @@ class HeaterBed{
   factory HeaterBed.fromJson(Map<String, dynamic> json) {
     // Handle different possible field names in JSON-RPC responses
     return HeaterBed(
-      currentTemperature: _extractTemp(json, 'current'),
-      targetTemperature: _extractTemp(json, 'target'),
+      currentTemperature: json['temperature']?? 0.0,
+      targetTemperature: json['target']?? 0.0,
       state: json['state'] as String? ?? '',
     );
-  }
-
-  // Helper method to extract temperature which might use different field names
-  static double _extractTemp(Map<String, dynamic> json, String type) {
-    // Check various possible field names
-    if (json.containsKey('${type}_temperature')) {
-      return (json['${type}_temperature'] as num?)?.toDouble() ?? 0.0;
-    } else if (json.containsKey('${type}')) {
-      return (json['${type}'] as num?)?.toDouble() ?? 0.0;
-    } else if (json.containsKey('temperature_${type}')) {
-      return (json['temperature_${type}'] as num?)?.toDouble() ?? 0.0;
-    }
-    return 0.0;
   }
 
   // Create an empty heater bed status
@@ -178,8 +165,8 @@ class Extruder {
   factory Extruder.fromJson(Map<String, dynamic> json) {
     // Similar to HeaterBed - handle different possible field names
     return Extruder(
-      currentTemperature: HeaterBed._extractTemp(json, 'current'),
-      targetTemperature: HeaterBed._extractTemp(json, 'target'),
+      currentTemperature: json['temperature']?? 0.0,
+      targetTemperature: json['target']?? 0.0,
       state: json['state'] as String? ?? '',
     );
   }
@@ -197,37 +184,20 @@ class Extruder {
 class PrintFile {
   final String path;
   final int size;
-  final DateTime? modified;
-  final String? filename;
+  final String filename;
 
   PrintFile({
     required this.path,
     required this.size,
-    this.modified,
-    this.filename,
+    required this.filename,
   });
 
   factory PrintFile.fromJson(Map<String, dynamic> json) {
+    final path = json['path'] ?? '';
     return PrintFile(
-      path: json['path'] ?? '',
+      path: path,
       size: json['size'] ?? 0,
-      modified: json['modified'] != null
-          ? DateTime.fromMillisecondsSinceEpoch((json['modified'] as num).toInt() * 1000)
-          : null,
-      filename: json['filename'] ?? json['path']?.toString().split('/').last,
+      filename: json['filename'] ?? path.split('/').last,
     );
-  }
-}
-
-class FileList {
-  final List<PrintFile> files;
-
-  FileList({
-    required this.files
-  });
-
-  // Create an empty file list
-  static FileList empty() {
-    return FileList(files: []);
   }
 }

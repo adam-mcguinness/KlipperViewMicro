@@ -42,13 +42,6 @@ class TempCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
                   '${currentTemp.toStringAsFixed(1)}°C / ${targetTemp.toStringAsFixed(0)}°C',
                   style: const TextStyle(fontSize: 14),
                 ),

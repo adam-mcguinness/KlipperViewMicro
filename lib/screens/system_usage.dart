@@ -1,34 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:klipper_view_micro/api/klipper_api.dart';
-import 'package:klipper_view_micro/models/printer_data.dart';
+import 'package:provider/provider.dart';
+import 'package:klipper_view_micro/providers/printer_state_provider.dart';
 import 'package:klipper_view_micro/utils/swipe_wrapper.dart';
 import 'package:klipper_view_micro/widgets/resource_widget.dart';
 
-class SystemUsage extends StatefulWidget {
+class SystemUsage extends StatelessWidget {
   const SystemUsage({super.key});
 
   @override
-  State<SystemUsage> createState() => _SystemUsageState();
-}
-
-class _SystemUsageState extends State<SystemUsage> {
-  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<ResourceUsage>(
-      stream: KlipperApi().resourceUsage,
-      builder: (context, snapshot) {
-        final resourceUsage = snapshot.data;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SwipeWrapper(
+        disableSwipeDown: false,
+        child: Consumer<PrinterStateProvider>(
+          builder: (context, provider, child) {
+            final state = provider.state;
 
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: SwipeWrapper(
-            disableSwipeDown: false,
-            child: Container(
+            // Show a loading indicator if disconnected
+            if (!state.isConnected) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Not connected to printer',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => provider.reconnect(),
+                      child: const Text('Connect'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final resourceUsage = state.resourceUsage;
+
+            return Container(
               color: Colors.grey.shade900,
               padding: const EdgeInsets.all(5),
-              child: resourceUsage == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : GridView.count(
+              child: GridView.count(
                 physics: const ClampingScrollPhysics(),
                 crossAxisCount: 2,
                 childAspectRatio: 1,
@@ -66,10 +80,10 @@ class _SystemUsageState extends State<SystemUsage> {
                   ),
                 ],
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

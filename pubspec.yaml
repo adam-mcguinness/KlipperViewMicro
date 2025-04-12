@@ -38,6 +38,8 @@ dependencies:
   syncfusion_flutter_charts: ^29.1.35
   sleek_circular_slider: ^2.0.1
   json_rpc_2: ^3.0.3
+  provider: ^6.1.4
+  material_design_icons_flutter: ^7.0.7296
 
 dev_dependencies:
   flutter_test:

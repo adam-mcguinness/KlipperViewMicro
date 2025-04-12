@@ -17,7 +17,7 @@ class SwipeWrapper extends StatelessWidget {
     this.showIndicator = true,
     this.pillColor = Colors.white,
     this.backgroundColor = Colors.transparent,
-    this.swipeDetectionHeight = 60.0, // Default detection area height
+    this.swipeDetectionHeight = 20.0, // Default detection area height
   });
 
   @override
@@ -32,11 +32,11 @@ class SwipeWrapper extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: -2, // 2 pixels below the bottom
+            bottom: -5, // 2 pixels below the bottom
             child: Container(
               height: 30,
               color: backgroundColor,
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 5),
               child: Center(
                 child: Container(
                   width: 40,
