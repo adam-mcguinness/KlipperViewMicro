@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 class TempCard extends StatelessWidget {
-  final String title;
   final double currentTemp;
   final double targetTemp;
   final IconData icon;
 
   const TempCard({
     super.key,
-    required this.title,
     required this.currentTemp,
     required this.targetTemp,
     required this.icon,
@@ -20,8 +18,8 @@ class TempCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black, width: 2),
       ),
-      padding: const EdgeInsets.all(12.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Icon container
           Container(
@@ -37,16 +35,13 @@ class TempCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           // Temperature text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${currentTemp.toStringAsFixed(1)}°C / ${targetTemp.toStringAsFixed(0)}°C',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
+          Column(
+            children: [
+              Text(
+                '${currentTemp.toStringAsFixed(1)}°C / ${targetTemp.toStringAsFixed(0)}°C',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
           ),
         ],
       ),

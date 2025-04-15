@@ -13,7 +13,7 @@ class StartStopButtons extends StatelessWidget {
       builder: (context, provider, child) {
         final state = provider.state;
         return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 FilledButton.tonal(
                   onPressed: () {

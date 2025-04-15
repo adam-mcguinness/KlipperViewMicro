@@ -35,7 +35,6 @@ class StatusScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: TempCard(
-                            title: 'Hotend Temps',
                             currentTemp: state.extruder.currentTemperature,
                             targetTemp: state.extruder.targetTemperature,
                             icon: MdiIcons.printer3DNozzleHeat,
@@ -44,10 +43,17 @@ class StatusScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: TempCard(
-                            title: 'Bed Temps',
                             currentTemp: state.heaterBed.currentTemperature,
                             targetTemp: state.heaterBed.targetTemperature,
                             icon: MdiIcons.radiator,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TempCard(
+                            currentTemp: state.heaterBed.currentTemperature,
+                            targetTemp: state.heaterBed.targetTemperature,
+                            icon: MdiIcons.thermostatBox,
                           ),
                         ),
                       ],
@@ -96,7 +102,7 @@ class StatusScreen extends StatelessWidget {
                         printTimeRemaining: state.remainingTime,
                       ),
                     Padding(
-                      padding: const EdgeInsets.only(left: 40.0, right: 40.0, top: 8.0, bottom: 16.0),
+                      padding: const EdgeInsets.only(left: 16, right: 16, top: 8.0, bottom: 16.0),
                       child: StartStopButtons(),
                     ),
                   ],

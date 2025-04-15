@@ -11,8 +11,8 @@ class AppConstants {
   static const double referencePPI = 254.0;
 
   // Window dimensions
-  static const double windowWidth = 410.0;
-  static const double windowHeight = 502.0;
+  static const double windowWidth = 800;
+  static const double windowHeight = 480;
 
   // UI refresh rate
   static const Duration refreshInterval = Duration(seconds: 5);
