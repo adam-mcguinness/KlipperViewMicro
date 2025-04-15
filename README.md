@@ -4,7 +4,6 @@
 
 **KlipperView Micro** is a compact, Flutter-based UI designed to serve as a simplified [KlipperScreen](https://github.com/jordanruthe/KlipperScreen) for your Klipper-powered 3D printer. Inspired by the sleek aesthetics of Ubiquiti devices, this project aims to deliver a clean, snappy, and modern interface— running on something like a Raspberry Pi using [flutter-pi](https://github.com/ardera/flutter-pi).
 
----
 
 # 🚀 Goals
 
@@ -13,7 +12,6 @@
 - Lightweight, responsive, and gesture-friendly.
 - Runs on bare metal via [`flutter-pi`](https://github.com/ardera/flutter-pi) (eventually...).
 
----
 
 # 📦 Project Status
 
@@ -48,7 +46,6 @@ This project is **under early development**. Expect broken features, weird ideas
 - Deployable bundle for [`flutter-pi`](https://github.com/ardera/flutter-pi)
 - Installer script or prebuilt image for Raspberry Pi/BTT CB2
 
----
 
 ## ❓ FAQ
 
@@ -67,8 +64,6 @@ You'll have to figure that out!
 Check out the [Flutter docs](https://docs.flutter.dev) for instructions on installing and building for different platforms.  
 This whole thing has been a learning experience for me, and... I’m still learning.
 
----
-
 
 # 📸 Screenshots
 ## Status Screen
@@ -85,13 +80,11 @@ This whole thing has been a learning experience for me, and... I’m still learn
 
 ## Jog Controls
 ![KlipperView Micro](/docs/screenshots/movment.png)
----
 
 # 🤝 Contributions
 
 This is a solo side project right now, but feel free to fork it, open issues, or suggest ideas. Just be chill — I’m making this up as I go.
 
----
 
 # 📜 License
 
