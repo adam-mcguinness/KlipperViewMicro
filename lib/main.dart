@@ -9,22 +9,25 @@ import 'package:window_manager/window_manager.dart';
 import 'utils/constants.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
 
-  WindowOptions windowOptions = WindowOptions(
-    size: Size(AppConstants.windowWidth, AppConstants.windowHeight),
-    center: true,
-    backgroundColor: Colors.transparent,
-    titleBarStyle: TitleBarStyle.normal,
-  );
+  // ----------------------
+  // This will set the window size to a specific resolution on startup for testing.
+  // ----------------------
+  // WidgetsFlutterBinding.ensureInitialized();
+  // await windowManager.ensureInitialized();
+  //
+  // WindowOptions windowOptions = WindowOptions(
+  //   size: Size(AppConstants.windowWidth, AppConstants.windowHeight),
+  //   center: true,
+  //   backgroundColor: Colors.transparent,
+  //   titleBarStyle: TitleBarStyle.normal,
+  // );
+  //
+  // await windowManager.waitUntilReadyToShow(windowOptions, () async {
+  //   await windowManager.show();
+  //   await windowManager.focus();
+  // });
 
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
-  // Run the app with MaterialApp directly
   runApp(
     const KlipperViewApp(),
   );

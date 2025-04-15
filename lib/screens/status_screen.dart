@@ -154,7 +154,6 @@ class ProgressBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
 
     // Calculate the length of each side
     final double topWidth = size.width;
