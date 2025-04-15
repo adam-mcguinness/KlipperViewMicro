@@ -66,19 +66,19 @@ This whole thing has been a learning experience for me, and... I’m still learn
 
 
 # 📸 Screenshots
-## Status Screen
+### Status Screen
 ![KlipperView Micro](/docs/screenshots/status.png)
 
-## Menu
+### Menu
 ![KlipperView Micro](/docs/screenshots/menu.png)
 
-## File List
+### File List
 ![KlipperView Micro](/docs/screenshots/files.png)
 
-## CPU and RAM Usage
+### CPU and RAM Usage
 ![KlipperView Micro](/docs/screenshots/resources.png)
 
-## Jog Controls
+### Jog Controls
 ![KlipperView Micro](/docs/screenshots/movment.png)
 
 # 🤝 Contributions
