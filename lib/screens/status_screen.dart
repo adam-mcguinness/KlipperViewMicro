@@ -49,13 +49,6 @@ class StatusScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: TempCard(
-                            currentTemp: state.heaterBed.currentTemperature,
-                            targetTemp: state.heaterBed.targetTemperature,
-                            icon: MdiIcons.thermostatBox,
-                          ),
-                        ),
                       ],
                     ),
                     Expanded(
