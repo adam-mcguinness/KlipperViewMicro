@@ -22,49 +22,153 @@ class StatusScreen extends StatelessWidget {
         disableSwipeDown: true,
         child: StreamBuilder<double>(
               stream: printerService.progressStream,
-              builder: (context, progressSnapshot) {
-                final progress = progressSnapshot.data ?? 0.0;
+              builder: (context, progressSnapshot)
+        {
+          final progress = progressSnapshot.data ?? 0.0;
+          return LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final height = constraints.maxHeight;
+                final perimeter = 2 * (width + height);
 
-                return CustomPaint(
-                  painter: ProgressBorderPainter(progress),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
+                // Calculate segment lengths as fractions of total perimeter
+                final topSegmentLength = width / perimeter;
+                final rightSegmentLength = height / perimeter;
+                final bottomSegmentLength = width / perimeter;
+                final leftSegmentLength = height / perimeter;
+
+                // Calculate progress for each segment
+                final topProgress = _calculateSegmentProgress(
+                    progress, 0, topSegmentLength);
+                final rightProgress = _calculateSegmentProgress(
+                    progress, topSegmentLength, rightSegmentLength);
+                final bottomProgress = _calculateSegmentProgress(
+                    progress, topSegmentLength + rightSegmentLength,
+                    bottomSegmentLength);
+                final leftProgress = _calculateSegmentProgress(
+                    progress,
+                    topSegmentLength + rightSegmentLength + bottomSegmentLength,
+                    leftSegmentLength);
+
+                return Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Extruder temperature card with streams
-                            Expanded(
-                              child: _buildExtruderTempCard(printerService),
+                            Row(
+                              children: [
+                                // Extruder temperature card with streams
+                                Expanded(
+                                  child: _buildExtruderTempCard(printerService),
+                                ),
+                                const SizedBox(width: 8),
+                                // Heater bed temperature card with streams
+                                Expanded(
+                                  child: _buildBedTempCard(printerService),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            // Heater bed temperature card with streams
+
+                            // Thumbnail section
                             Expanded(
-                              child: _buildBedTempCard(printerService),
+                              child: _buildThumbnailSection(printerService),
                             ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                        // Thumbnail section
-                        Expanded(
-                          child: _buildThumbnailSection(printerService),
-                        ),
-                        // Print stats row with all necessary streams
-                        _buildPrintStatsRow(printerService),
-                        // Buttons
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              left: 16, right: 16, top: 8.0, bottom: 16.0),
-                          child: StartStopButtons(),
-                        ),
-                      ],
+
+                            // Print stats row with all necessary streams
+                            _buildPrintStatsRow(printerService),
+                            // Buttons
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 16, right: 16, top: 8.0, bottom: 16.0),
+                              child: StartStopButtons(),
+                            ),
+                          ]
+                      ),
                     ),
-                  ),
+
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          // Left half (filled last, 75-100%)
+                          Expanded(
+                            child: Transform.scale(
+                              scaleX: -1, // Flip direction
+                              child: LinearProgressIndicator(
+                                value: leftProgress > 0 ? 1.0 : 0.0,
+                                minHeight: 4.0,
+                                backgroundColor: Colors.blue.withAlpha(100),
+                              ),
+                            ),
+                          ),
+                          // Right half (filled first, 0-25%)
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: topProgress,
+                              minHeight: 4.0,
+                              backgroundColor: Colors.blue.withAlpha(100),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Right progress bar (25-50%)
+                    Positioned(
+                      top: 4,
+                      right: 0,
+                      bottom: 4,
+                      child: RotatedBox(
+                        quarterTurns: 1,
+                        child: LinearProgressIndicator(
+                          value: rightProgress,
+                          minHeight: 4.0,
+                          backgroundColor: Colors.blue.withAlpha(100),
+                        ),
+                      ),
+                    ),
+
+                    // Bottom progress bar (50-75%)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Transform.scale(
+                        scaleX: -1, // Flip direction
+                        child: LinearProgressIndicator(
+                          value: bottomProgress,
+                          minHeight: 4.0,
+                          backgroundColor: Colors.blue.withAlpha(100),
+                        ),
+                      ),
+                    ),
+
+                    // Left progress bar (75-100%)
+                    Positioned(
+                      top: 4,
+                      left: 0,
+                      bottom: 4,
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: LinearProgressIndicator(
+                          value: leftProgress,
+                          minHeight: 4.0,
+                          backgroundColor: Colors.blue.withAlpha(100),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
-              },
-        ),
-      )
+              }
+          );
+        }
+  )
+    )
     );
   }
 
@@ -239,69 +343,17 @@ class StatusScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-// Custom painter for the progress border
-class ProgressBorderPainter extends CustomPainter {
-  final double progress; // 0.0 to 1.0
+  double _calculateSegmentProgress(double overallProgress, double segmentStart, double segmentLength) {
+    // If progress hasn't reached this segment yet
+    if (overallProgress < segmentStart)
+      return 0.0;
 
-  ProgressBorderPainter(this.progress);
+    // If progress has passed this segment completely
+    if (overallProgress >= segmentStart + segmentLength)
+      return 1.0;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-
-    // Calculate the length of each side
-    final double topWidth = size.width;
-    final double sideHeight = size.height;
-    final double bottomWidth = size.width;
-
-    // Calculate the total perimeter length
-    final double totalLength = 2 * (topWidth + sideHeight);
-
-    // Calculate how far to draw based on progress
-    final double drawLength = totalLength * progress;
-
-    // Drawing parameters
-    final Paint paint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0;
-
-    final path = Path();
-
-    // Start from top-left
-    path.moveTo(0, 0);
-
-    // Draw top edge
-    if (drawLength < topWidth) {
-      path.lineTo(drawLength, 0);
-    } else {
-      path.lineTo(topWidth, 0);
-
-      // Draw right edge
-      if (drawLength < topWidth + sideHeight) {
-        path.lineTo(topWidth, drawLength - topWidth);
-      } else {
-        path.lineTo(topWidth, sideHeight);
-
-        // Draw bottom edge
-        if (drawLength < topWidth + sideHeight + bottomWidth) {
-          path.lineTo(topWidth - (drawLength - topWidth - sideHeight), sideHeight);
-        } else {
-          path.lineTo(0, sideHeight);
-
-          // Draw left edge
-          final double leftRemaining = drawLength - topWidth - sideHeight - bottomWidth;
-          path.lineTo(0, sideHeight - leftRemaining);
-        }
-      }
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant ProgressBorderPainter oldDelegate) {
-    return progress != oldDelegate.progress;
+    // Progress is partially in this segment
+    return (overallProgress - segmentStart) / segmentLength;
   }
 }
