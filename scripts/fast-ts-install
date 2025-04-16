@@ -1,0 +1,17 @@
+sudo apt install libi2c-dev
+
+git clone https://github.com/ardera/raspberrypi-fast-ts.git
+cd raspberrypi-fast-ts
+make
+sudo make install
+
+#enable uinput module
+echo 'uinput' | sudo tee -a /etc/modules
+
+# add the following
+[all]
+disable_touchscreen=1
+dtparam=i2c_vc=on
+dtparam=i2c_vc_baudrate=400000
+cma=256M
+gpu_mem=128
