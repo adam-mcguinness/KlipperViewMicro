@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:klipper_view_micro/models/printer_data.dart';
-import 'package:klipper_view_micro/providers/printer_state_provider.dart';
+import 'package:klipper_view_micro/services/printer_service.dart';
 import 'package:provider/provider.dart';
 import '../utils/swipe_wrapper.dart';
 
@@ -23,10 +23,10 @@ class _FileListScreenState extends State<FileListScreen> {
   }
 
   Future<void> _loadFileList() async {
-    final provider = Provider.of<PrinterStateProvider>(context, listen: false);
+    final printerService = PrinterService();
 
     try {
-      final response = await provider.api.call('server.files.list', {'root': 'gcodes'});
+      final response = await printerService.api.call('server.files.list', {'root': 'gcodes'});
 
       setState(() {
         // Convert response directly to List<PrintFile>
@@ -120,6 +120,7 @@ class _FileListScreenState extends State<FileListScreen> {
   }
 
   void _showPrintDialog(PrintFile file) {
+    final printerService = PrinterService();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -140,9 +141,7 @@ class _FileListScreenState extends State<FileListScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              print(file.path);
-              final provider = Provider.of<PrinterStateProvider>(context, listen: false);
-              provider.api.call('printer.print.start', {'filename': file.path}).then((_) {
+              printerService.api.call('printer.print.start', {'filename': file.path}).then((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Print job started')),
                 );

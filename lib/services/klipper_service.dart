@@ -7,12 +7,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../utils/constants.dart';
 
-class KlipperApi {
-  static final KlipperApi _instance = KlipperApi._internal();
+class KlipperService {
+  static final KlipperService _instance = KlipperService._internal();
 
-  factory KlipperApi() => _instance;
+  factory KlipperService() => _instance;
 
-  KlipperApi._internal();
+  KlipperService._internal();
 
   Peer? _peer;
   WebSocketChannel? _channel;
