@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:klipper_view_micro/models/printer_data.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../utils/constants.dart';
@@ -17,23 +18,55 @@ class KlipperApi {
   WebSocketChannel? _channel;
   bool isConnected = false;
 
-  String ipAddress = AppConstants.defaultIpAddress;
+  String ipAddress = '127.0.0.1';
   int port = AppConstants.defaultPort;
 
-  final _printStatsStream = StreamController<PrintStats>.broadcast();
-  Stream<PrintStats> get printStatus => _printStatsStream.stream;
+  // Use BehaviorSubjects to cache the latest value
+  final _printStatsSubject = BehaviorSubject<PrintStats>.seeded(PrintStats.empty());
+  final _resourceUsageSubject = BehaviorSubject<ResourceUsage>.seeded(ResourceUsage.empty());
+  final _heaterBedSubject = BehaviorSubject<HeaterBed>.seeded(HeaterBed.empty());
+  final _extruderSubject = BehaviorSubject<Extruder>.seeded(Extruder.empty());
+  final _virtualSdCardSubject = BehaviorSubject<VirtualSdCard>.seeded(VirtualSdCard());
 
-  final _resourceUsageStream = StreamController<ResourceUsage>.broadcast();
-  Stream<ResourceUsage> get resourceUsage => _resourceUsageStream.stream;
+  // Throttled streams - update at most once every 250ms
+  late final Stream<PrintStats> printStatus;
+  late final Stream<ResourceUsage> resourceUsage;
+  late final Stream<HeaterBed> heaterBedStatus;
+  late final Stream<Extruder> extruderStatus;
+  late final Stream<VirtualSdCard> virtualSdCardStatus;
 
-  final _heaterBedStream = StreamController<HeaterBed>.broadcast();
-  Stream<HeaterBed> get heaterBedStatus => _heaterBedStream.stream;
+  // Direct access to latest values (doesn't require subscription)
+  PrintStats get latestPrintStats => _printStatsSubject.value;
+  ResourceUsage get latestResourceUsage => _resourceUsageSubject.value;
+  HeaterBed get latestHeaterBed => _heaterBedSubject.value;
+  Extruder get latestExtruder => _extruderSubject.value;
+  VirtualSdCard get latestVirtualSdCard => _virtualSdCardSubject.value;
 
-  final _extruderStream = StreamController<Extruder>.broadcast();
-  Stream<Extruder> get extruderStatus => _extruderStream.stream;
 
-  final _virtualSdCardStream = StreamController<VirtualSdCard>.broadcast();
-  Stream<VirtualSdCard> get virtualSdCardStatus => _virtualSdCardStream.stream;
+  void _initStreams() {
+    final throttleDuration = Duration(milliseconds: 250);
+
+    // Apply throttling to each stream
+    printStatus = _printStatsSubject.stream
+        .throttleTime(throttleDuration)
+        .distinct();
+
+    resourceUsage = _resourceUsageSubject.stream
+        .throttleTime(throttleDuration)
+        .distinct();
+
+    heaterBedStatus = _heaterBedSubject.stream
+        .throttleTime(throttleDuration)
+        .distinct();
+
+    extruderStatus = _extruderSubject.stream
+        .throttleTime(throttleDuration)
+        .distinct();
+
+    virtualSdCardStatus = _virtualSdCardSubject.stream
+        .throttleTime(throttleDuration)
+        .distinct();
+  }
 
   // Fix: Update method parameters to avoid variable shadowing
   void updateConnectionDetails({String? newIpAddress, int? newPort}) {
@@ -55,10 +88,12 @@ class KlipperApi {
       _channel = WebSocketChannel.connect(Uri.parse(url));
       _peer = Peer(_channel!.cast<String>());
 
+      _initStreams();
+
       // Register methods to handle server notifications
       _peer!.registerMethod('notify_status_update', (Parameters params) {
         try {
-          print('Received status update: ${params.value}');
+          // print('Received status update: ${params.value}');
 
           // Extract component data from the list format
           if (params.value is List && params.value.isNotEmpty) {
@@ -81,7 +116,7 @@ class KlipperApi {
         try {
           if (params.value is List && params.value.isNotEmpty && params.value.first is Map<String, dynamic>) {
             final resourceUsage = ResourceUsage.fromJson(params.value.first);
-            _resourceUsageStream.add(resourceUsage);
+            _resourceUsageSubject.add(resourceUsage);
           }
         } catch (e) {
           print('Error processing resource update: $e');
@@ -112,7 +147,7 @@ class KlipperApi {
       final bedData = statusData['heater_bed'];
       if (bedData is Map<String, dynamic>) {
         final bedStatus = HeaterBed.fromJson(bedData);
-        _heaterBedStream.add(bedStatus);
+        _heaterBedSubject.add(bedStatus);
       }
     }
 
@@ -120,20 +155,20 @@ class KlipperApi {
       final extruderData = statusData['extruder'];
       if (extruderData is Map<String, dynamic>) {
         final extruderStatus = Extruder.fromJson(extruderData);
-        _extruderStream.add(extruderStatus);
+        _extruderSubject.add(extruderStatus);
       }
     }
 
     if (statusData.containsKey('print_stats')) {
       final updatedStats = PrintStats.fromJson(statusData['print_stats']);
-      _printStatsStream.add(updatedStats);
+      _printStatsSubject.add(updatedStats);
     }
 
     if (statusData.containsKey('virtual_sdcard')) {
       final sdCardData = statusData['virtual_sdcard'];
       if (sdCardData is Map<String, dynamic>) {
         final sdCardStatus = VirtualSdCard.fromJson(sdCardData);
-        _virtualSdCardStream.add(sdCardStatus);
+        _virtualSdCardSubject.add(sdCardStatus);
       }
     }
 
